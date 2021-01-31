@@ -7,6 +7,10 @@ struct vect2d{
     int x,y;
 };
 
+struct point{
+    vect2d pos; bool big;
+};
+
 std::vector<bool> _maps = {
     0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
     0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,
@@ -16,7 +20,7 @@ std::vector<bool> _maps = {
     0,1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,1,0,
     0,1,1,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,1,0,
     0,0,0,0,1,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0,0,
-    1,1,1,1,1,0,1,0,1,1,0,1,1,0,1,0,1,1,1,1,1,
+    1,1,1,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,
     0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,
     1,1,1,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,
     0,0,0,0,1,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0,0,
@@ -137,12 +141,51 @@ void mapRender(SDL_Renderer* renderer){
     }
 }
 
+void pointRender(SDL_Renderer* renderer, std::vector<point> points){
+    SDL_Rect rect;
+    for(unsigned int i = 0; i < points.size(); i++){
+        if(points[i].big){
+            rect = {points[i].pos.x,points[i].pos.y,16,16};
+        }else{
+            rect = {points[i].pos.x,points[i].pos.y,10,10};
+        }
+        SDL_SetRenderDrawColor(renderer, 150,150,0,255);
+        SDL_RenderFillRect(renderer, &rect);
+    }
+}
+
+
 int main(int argc, char* argv[])
 {
     SDL_Window* window = SDL_CreateWindow("apps", 100,100,420,420,false);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
 
     player mplayer = player(&_maps);
+
+    std::vector<point> points;
+    for(int i = 0; i < 21; i++){
+        for(int j = 0; j < 21; j++){
+            if(j!=0 && j!=20){
+                if(i==7 || i==11 || i == 9){
+                    if(j>4 && j<16){
+                        if(!_maps[i*21+j]){
+                            points.push_back({{j*20+5,i*20+5},0});
+                        }
+                    }
+                }else{
+                    if(!_maps[i*21+j]){
+                        if((i == 2 && j == 2)||(i == 2 && j == 18)||(i == 18 && j == 2)||(i == 18 && j == 18)){
+                            points.push_back({{j*20+2,i*20+2},1});
+                        }else{
+                            if(i!=15 || j!=10){
+                                points.push_back({{j*20+5,i*20+5},0});
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     SDL_Event event;
     int frame = SDL_GetTicks();
@@ -151,6 +194,7 @@ int main(int argc, char* argv[])
         SDL_RenderClear(renderer);
         mplayer.render(renderer);
         mapRender(renderer);
+        pointRender(renderer, points);
 
         SDL_PollEvent(&event);
         if(event.type == SDL_QUIT || (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)){
@@ -158,10 +202,18 @@ int main(int argc, char* argv[])
         }
         mplayer.control(&event);
 
-        if(SDL_GetTicks()-frame>=150){
+        if(SDL_GetTicks()-frame>=125){
             mplayer.update();
             std::cout<<mplayer.getBody()->x<<":"<<mplayer.getBody()->y<<std::endl;
             frame = SDL_GetTicks();
+        }
+
+        for(std::vector<point>::iterator it = points.begin(); it != points.end(); it++){
+            if(mplayer.getBody()->x < it->pos.x+10 && mplayer.getBody()->x+20 > it->pos.x &&
+               mplayer.getBody()->y < it->pos.y+10 && mplayer.getBody()->y+20 > it->pos.y){
+                points.erase(it);
+                it--;
+            }
         }
 
 
