@@ -43,7 +43,7 @@ private:
 public:
     player(std::vector<bool>* maps){
         body = {200,300,20,20};
-        mouth = {body.x+10, body.y+7, 10, 6};
+        mouth = {body.x+7, body.y, 6, 10};
         cmd = 0; lcmd = 0;
         moveD[0] = moveD[1] = moveD[2] = moveD[3] = 0;
     }
@@ -84,7 +84,7 @@ public:
                 moveD[3] = 0;
             }
         }
-        //cmd = 0;
+//        cmd = 0;
         for(int i = 0; i < 4; i++){
             if(moveD[i]){
                 cmd = i+1;
@@ -99,7 +99,7 @@ public:
             }
         }
         if(cmd == 2){
-            std::cout<<"right"<<std::endl;
+            //std::cout<<"right"<<std::endl;
             if(!_maps[((body.y/20)*21)+(body.x/20)+1]){
                 lcmd = cmd;
             }
@@ -114,24 +114,36 @@ public:
                 lcmd = cmd;
             }
         }
-        std::cout<<lcmd<<std::endl;
+        //std::cout<<lcmd<<std::endl;
         if(lcmd == 1){
             bool istouch = false;
-            if(_maps[((body.y/20)*21)+(body.x/20)-1]){
-                istouch = true;
+            if(body.x!=0){
+                if(_maps[((body.y/20)*21)+(body.x/20)-1]){
+                    istouch = true;
+                }
             }
             if(!istouch){
-                body.x-=20;
+                if(body.x == 0){
+                    body.x=400;
+                }else{
+                    body.x-=20;
+                }
                 mouth = {body.x, body.y+7, 10, 6};
             }
         }
         if(lcmd == 2){
             bool istouch = false;
-            if(_maps[((body.y/20)*21)+(body.x/20)+1]){
-                istouch = true;
+            if(body.x!=400){
+                if(_maps[((body.y/20)*21)+(body.x/20)+1]){
+                    istouch = true;
+                }
             }
             if(!istouch){
-                body.x+=20;
+                if(body.x == 400){
+                    body.x = 0;
+                }else{
+                    body.x+=20;
+                }
                 mouth = {body.x+10, body.y+7, 10, 6};
             }
         }
@@ -243,7 +255,13 @@ int main(int argc, char* argv[])
         mplayer.control(&event);
 
         if(SDL_GetTicks()-frame>=125){
-            mplayer.update();
+            if(points.empty()){
+                if(event.type == SDL_KEYDOWN && (event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_RETURN2)){
+                    break;
+                }
+            }else{
+                mplayer.update();
+            }
             //std::cout<<mplayer.getBody()->x<<":"<<mplayer.getBody()->y<<std::endl;
             frame = SDL_GetTicks();
         }
