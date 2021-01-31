@@ -1,4 +1,5 @@
 pacman.cbp
 /bin
 /obj
-/pacman.layout
+pacman.layout
+pacman.depend
