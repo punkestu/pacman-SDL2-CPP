@@ -38,11 +38,13 @@ std::vector<bool> _maps = {
 class player{
 private:
     SDL_Rect body, mouth;
+    short cmd, lcmd;
     bool moveD[4];
 public:
     player(std::vector<bool>* maps){
         body = {200,300,20,20};
         mouth = {body.x+10, body.y+7, 10, 6};
+        cmd = 0; lcmd = 0;
         moveD[0] = moveD[1] = moveD[2] = moveD[3] = 0;
     }
 
@@ -56,34 +58,64 @@ public:
     void control(SDL_Event* event){
         if(event->type == SDL_KEYDOWN){
             if(event->key.keysym.sym == SDLK_a){
-                if(!_maps[((body.y/20)*21)+(body.x/20)-1]){
-                    moveD[0] = 1;
-                    moveD[1] = moveD[2] = moveD[3] = 0;
-                }
+                moveD[0] = 1;
             }
             if(event->key.keysym.sym == SDLK_d){
-                if(!_maps[((body.y/20)*21)+(body.x/20)+1]){
-                    moveD[1] = 1;
-                    moveD[0] = moveD[2] = moveD[3] = 0;
-                }
+                moveD[1] = 1;
             }
             if(event->key.keysym.sym == SDLK_w){
-                if(!_maps[((body.y/20)*21)+(body.x/20)-21]){
-                    moveD[2] = 1;
-                    moveD[0] = moveD[1] = moveD[3] = 0;
-                }
+                moveD[2] = 1;
             }
             if(event->key.keysym.sym == SDLK_s){
-                if(!_maps[((body.y/20)*21)+(body.x/20)+21]){
-                    moveD[3] = 1;
-                    moveD[0] = moveD[1] = moveD[2] = 0;
-                }
+                moveD[3] = 1;
+            }
+        }
+        if(event->type == SDL_KEYUP){
+            if(event->key.keysym.sym == SDLK_a){
+                moveD[0] = 0;
+            }
+            if(event->key.keysym.sym == SDLK_d){
+                moveD[1] = 0;
+            }
+            if(event->key.keysym.sym == SDLK_w){
+                moveD[2] = 0;
+            }
+            if(event->key.keysym.sym == SDLK_s){
+                moveD[3] = 0;
+            }
+        }
+        //cmd = 0;
+        for(int i = 0; i < 4; i++){
+            if(moveD[i]){
+                cmd = i+1;
             }
         }
     }
 
     void update(){
-        if(moveD[0]){
+        if(cmd == 1){
+            if(!_maps[((body.y/20)*21)+(body.x/20)-1]){
+                lcmd = cmd;
+            }
+        }
+        if(cmd == 2){
+            std::cout<<"right"<<std::endl;
+            if(!_maps[((body.y/20)*21)+(body.x/20)+1]){
+                lcmd = cmd;
+            }
+        }
+        if(cmd == 3){
+            if(!_maps[((body.y/20)*21)+(body.x/20)-21]){
+                lcmd = cmd;
+            }
+        }
+        if(cmd == 4){
+            if(!_maps[((body.y/20)*21)+(body.x/20)+21]){
+                lcmd = cmd;
+            }
+        }
+        std::cout<<lcmd<<std::endl;
+        if(lcmd == 1){
             bool istouch = false;
             if(_maps[((body.y/20)*21)+(body.x/20)-1]){
                 istouch = true;
@@ -93,7 +125,7 @@ public:
                 mouth = {body.x, body.y+7, 10, 6};
             }
         }
-        if(moveD[1]){
+        if(lcmd == 2){
             bool istouch = false;
             if(_maps[((body.y/20)*21)+(body.x/20)+1]){
                 istouch = true;
@@ -103,7 +135,7 @@ public:
                 mouth = {body.x+10, body.y+7, 10, 6};
             }
         }
-        if(moveD[2]){
+        if(lcmd == 3){
             bool istouch = false;
             if(_maps[((body.y/20)*21)+(body.x/20)-21]){
                 istouch = true;
@@ -113,7 +145,7 @@ public:
                 mouth = {body.x+7, body.y, 6, 10};
             }
         }
-        if(moveD[3]){
+        if(lcmd == 4){
             bool istouch = false;
             if(_maps[((body.y/20)*21)+(body.x/20)+21]){
                 istouch = true;
@@ -168,8 +200,16 @@ int main(int argc, char* argv[])
             if(j!=0 && j!=20){
                 if(i==7 || i==11 || i == 9){
                     if(j>4 && j<16){
-                        if(!_maps[i*21+j]){
-                            points.push_back({{j*20+5,i*20+5},0});
+                        if(i == 9 ){
+                            if(j<8 || j>12){
+                                if(!_maps[i*21+j]){
+                                    points.push_back({{j*20+5,i*20+5},0});
+                                }
+                            }
+                        }else{
+                            if(!_maps[i*21+j]){
+                                points.push_back({{j*20+5,i*20+5},0});
+                            }
                         }
                     }
                 }else{
@@ -204,7 +244,7 @@ int main(int argc, char* argv[])
 
         if(SDL_GetTicks()-frame>=125){
             mplayer.update();
-            std::cout<<mplayer.getBody()->x<<":"<<mplayer.getBody()->y<<std::endl;
+            //std::cout<<mplayer.getBody()->x<<":"<<mplayer.getBody()->y<<std::endl;
             frame = SDL_GetTicks();
         }
 
