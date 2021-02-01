@@ -183,12 +183,13 @@ private:
     int id;
 public:
     int lmd;
+    bool moved;
     enemy(int id){
-        lmd = 0;
+        moved = false;
         frightened = false;
         this->id = id;
         if(id == 0){
-            body = {11*20,8*20,20,20};
+            body = {10*20,8*20,20,20};
         }
         if(id == 1){
             body = {9*20,10*20,20,20};
@@ -206,6 +207,12 @@ public:
 
     void moveX(int dir){
         body.x+=dir*20;
+        if(body.x>420){
+            body.x=0;
+        }
+        if(body.x<0){
+            body.x=420;
+        }
         eye = {body.x+7,body.y+3,6,6};
     }
     void moveY(int dir){
@@ -241,7 +248,7 @@ public:
     SDL_Rect* getBody(){return &body;}
 
 };
-void blinkyPF(enemy* _enemy);
+void blinkyPF(enemy* _enemy, player mplayer, bool chasing);
 void pinkyPF(enemy* _enemy);
 void inkyPF(enemy* _enemy);
 void clydePF(enemy* _enemy);
@@ -288,7 +295,6 @@ int main(int argc, char* argv[])
     player mplayer = player(&_maps);
     std::vector<enemy*> enemies;
     for(int i = 0; i < 4; i++){enemies.push_back(new enemy(i));}
-    blinkyPF(enemies[0]);
 
     std::vector<point> points;
     for(int i = 0; i < 21; i++){
@@ -325,6 +331,8 @@ int main(int argc, char* argv[])
 
     SDL_Event event;
     int frame = SDL_GetTicks();
+    int chaseTime = SDL_GetTicks();
+    bool chasing = true;
     while(true){
         SDL_SetRenderDrawColor(renderer, 0,0,0,255);
         SDL_RenderClear(renderer);
@@ -341,13 +349,24 @@ int main(int argc, char* argv[])
         }
         mplayer.control(&event);
 
-        if(SDL_GetTicks()-frame>=125){
+        if(chasing){
+            if(SDL_GetTicks()-chaseTime>=20*1000){
+                chasing = false;
+            }
+        }else{
+            if(SDL_GetTicks()-chaseTime>=10*1000){
+                chasing = true;
+            }
+        }
+
+        if(SDL_GetTicks()-frame>=175){
             if(points.empty()){
                 if(event.type == SDL_KEYDOWN && (event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_RETURN2)){
                     break;
                 }
             }else{
                 mplayer.update();
+                blinkyPF(enemies[0],mplayer,chasing);
             }
             //std::cout<<mplayer.getBody()->x<<":"<<mplayer.getBody()->y<<std::endl;
             frame = SDL_GetTicks();
@@ -378,30 +397,35 @@ float mutlak(float val){
     return val>=0 ? val:-val;
 }
 
-void blinkyPF(enemy* _enemy){
-    vect2d cPos = {420,0};
+void blinkyPF(enemy* _enemy, player mplayer, bool chasing){
+    vect2d cPos;
+    if(chasing){
+        cPos = {mplayer.getBody()->x,mplayer.getBody()->y};
+    }else{
+        cPos = {480,0};
+    }
     float range[4];
         range[0] = range[1] = range[2] = range[3] = 650.f;
     int dir[4];
         dir[0] = 2; dir[1] = 3; dir[2] = 0; dir[3] = 1;
     if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20-1]){
         range[2] = mutlak(sqrt(float(
-                                  pow(cPos.x-_enemy->getBody()->x-20,2)+pow(cPos.y-_enemy->getBody()->y,2)
+                                  pow(cPos.x-(_enemy->getBody()->x-20),2)+pow(cPos.y-_enemy->getBody()->y,2)
                                   )));
     }
     if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20+1]){
         range[3] = mutlak(sqrt(float(
-                                  pow(cPos.x-_enemy->getBody()->x+20,2)+pow(cPos.y-_enemy->getBody()->y,2)
+                                  pow(cPos.x-(_enemy->getBody()->x+20),2)+pow(cPos.y-_enemy->getBody()->y,2)
                                   )));
     }
     if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20-21]){
         range[0] = mutlak(sqrt(float(
-                                  pow(cPos.x-_enemy->getBody()->x,2)+pow(cPos.y-_enemy->getBody()->y-20,2)
+                                  pow(cPos.x-_enemy->getBody()->x,2)+pow(cPos.y-(_enemy->getBody()->y-20),2)
                                   )));
     }
     if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20+21]){
         range[1] = mutlak(sqrt(float(
-                                  pow(cPos.x-_enemy->getBody()->x,2)+pow(cPos.y-_enemy->getBody()->y+20,2)
+                                  pow(cPos.x-_enemy->getBody()->x,2)+pow(cPos.y-(_enemy->getBody()->y+20),2)
                                   )));
     }
     for(int i = 1; i < 4; i++){
@@ -416,6 +440,46 @@ void blinkyPF(enemy* _enemy){
             }
         }
     }
-    for(int i = 0; i < 4; i++){std::cout<<dir[i]<<" "<<range[i]<<std::endl;}
-    std::cout<<dir[0]<<std::endl;
+    choose:
+    std::cout<<dir[0]<<":"<<range[0]<<std::endl;
+    if(!_enemy->moved){
+        _enemy->lmd = dir[0];
+        _enemy->moved = true;
+    }
+    if(dir[0] == 0){
+        if(_enemy->lmd!=1){
+            _enemy->moveX(-1);
+            _enemy->lmd = 0;
+        }else{
+            dir[0] = dir[1];
+            goto choose;
+        }
+    }
+    if(dir[0] == 1){
+        if(_enemy->lmd!=0){
+            _enemy->moveX(1);
+            _enemy->lmd = 1;
+        }else{
+            dir[0] = dir[1];
+            goto choose;
+        }
+    }
+    if(dir[0] == 2){
+        if(_enemy->lmd!=3){
+            _enemy->moveY(-1);
+            _enemy->lmd = 2;
+        }else{
+            dir[0] = dir[1];
+            goto choose;
+        }
+    }
+    if(dir[0] == 3){
+        if(_enemy->lmd!=2){
+            _enemy->moveY(1);
+            _enemy->lmd = 3;
+        }else{
+            dir[0] = dir[1];
+            goto choose;
+        }
+    }
 }
