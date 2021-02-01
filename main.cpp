@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include <vector>
+#include <math.h>
 
 struct vect2d{
     int x,y;
@@ -14,6 +15,7 @@ struct point{
 std::vector<bool> _maps = {
     0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
     0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,
+    0,1,0,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1,0,
     0,1,0,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1,0,
     0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,
     0,1,0,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,0,1,0,
@@ -42,7 +44,7 @@ private:
     bool moveD[4];
 public:
     player(std::vector<bool>* maps){
-        body = {200,300,20,20};
+        body = {200,320,20,20};
         mouth = {body.x+7, body.y, 6, 10};
         cmd = 0; lcmd = 0;
         moveD[0] = moveD[1] = moveD[2] = moveD[3] = 0;
@@ -172,14 +174,91 @@ public:
     SDL_Rect* getBody(){return &body;}
 };
 
+
+class enemy{
+private:
+    bool frightened;
+    SDL_Rect body;
+    SDL_Rect eye;
+    int id;
+public:
+    int lmd;
+    enemy(int id){
+        lmd = 0;
+        frightened = false;
+        this->id = id;
+        if(id == 0){
+            body = {11*20,8*20,20,20};
+        }
+        if(id == 1){
+            body = {9*20,10*20,20,20};
+        }
+        if(id == 2){
+            body = {10*20,10*20,20,20};
+        }
+        if(id == 3){
+            body = {11*20,10*20,20,20};
+        }
+        std::cout<<"passed"<<std::endl;
+        eye = {body.x+7,body.y+3,6,6};
+        std::cout<<"passed"<<std::endl;
+    }
+
+    void moveX(int dir){
+        body.x+=dir*20;
+        eye = {body.x+7,body.y+3,6,6};
+    }
+    void moveY(int dir){
+        body.y+=dir*20;
+        eye = {body.x+7,body.y+3,6,6};
+    }
+
+    void render(SDL_Renderer* renderer){
+        if(id == 0){
+            SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+            SDL_RenderFillRect(renderer, &body);
+        }
+        if(id == 1){
+            SDL_SetRenderDrawColor(renderer, 255, 184, 255, 255);
+            SDL_RenderFillRect(renderer, &body);
+        }
+        if(id == 2){
+            SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
+            SDL_RenderFillRect(renderer, &body);
+        }
+        if(id == 3){
+            SDL_SetRenderDrawColor(renderer, 255, 184, 81, 255);
+            SDL_RenderFillRect(renderer, &body);
+        }
+        if(frightened){
+            SDL_SetRenderDrawColor(renderer, 0, 0, 255, 100);
+            SDL_RenderFillRect(renderer, &body);
+        }
+        SDL_SetRenderDrawColor(renderer, 255,255,255,255);
+        SDL_RenderFillRect(renderer, &eye);
+    }
+
+    SDL_Rect* getBody(){return &body;}
+
+};
+void blinkyPF(enemy* _enemy);
+void pinkyPF(enemy* _enemy);
+void inkyPF(enemy* _enemy);
+void clydePF(enemy* _enemy);
+
 void mapRender(SDL_Renderer* renderer){
     SDL_Rect rect;
-    for(int i = 0; i < 21; i++){
+    for(int i = 0; i < 22; i++){
         for(int j = 0; j < 21; j++){
             if(_maps[i*21+j]){
                 rect = {j*20, i*20, 20, 20};
-                SDL_SetRenderDrawColor(renderer, 0,0,255,255);
-                SDL_RenderFillRect(renderer, &rect);
+                if(i*21+j == 21*9+10){
+                    SDL_SetRenderDrawColor(renderer, 0,100,255,255);
+                    SDL_RenderFillRect(renderer, &rect);
+                }else{
+                    SDL_SetRenderDrawColor(renderer, 0,0,255,255);
+                    SDL_RenderFillRect(renderer, &rect);
+                }
             }
         }
     }
@@ -198,21 +277,26 @@ void pointRender(SDL_Renderer* renderer, std::vector<point> points){
     }
 }
 
+float mutlak(float val);
 
 int main(int argc, char* argv[])
 {
-    SDL_Window* window = SDL_CreateWindow("apps", 100,100,420,420,false);
+    SDL_Window* window = SDL_CreateWindow("apps", 100,100,420,440,false);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     player mplayer = player(&_maps);
+    std::vector<enemy*> enemies;
+    for(int i = 0; i < 4; i++){enemies.push_back(new enemy(i));}
+    blinkyPF(enemies[0]);
 
     std::vector<point> points;
     for(int i = 0; i < 21; i++){
         for(int j = 0; j < 21; j++){
             if(j!=0 && j!=20){
-                if(i==7 || i==11 || i == 9){
+                if(i==8 || i==12 || i == 10){
                     if(j>4 && j<16){
-                        if(i == 9 ){
+                        if(i == 10 ){
                             if(j<8 || j>12){
                                 if(!_maps[i*21+j]){
                                     points.push_back({{j*20+5,i*20+5},0});
@@ -226,7 +310,7 @@ int main(int argc, char* argv[])
                     }
                 }else{
                     if(!_maps[i*21+j]){
-                        if((i == 2 && j == 2)||(i == 2 && j == 18)||(i == 18 && j == 2)||(i == 18 && j == 18)){
+                        if((i == 2 && j == 2)||(i == 2 && j == 18)||(i == 16 && j == 2)||(i == 16 && j == 18)){
                             points.push_back({{j*20+2,i*20+2},1});
                         }else{
                             if(i!=15 || j!=10){
@@ -247,6 +331,9 @@ int main(int argc, char* argv[])
         mplayer.render(renderer);
         mapRender(renderer);
         pointRender(renderer, points);
+        for(int i = 0; i < 4; i++){
+            enemies[i]->render(renderer);
+        }
 
         SDL_PollEvent(&event);
         if(event.type == SDL_QUIT || (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)){
@@ -278,9 +365,57 @@ int main(int argc, char* argv[])
         SDL_RenderPresent(renderer);
     }
 
+    for(int i = 0; i < 4; i++){delete enemies[i];}
+
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
 
     return 0;
+}
+
+float mutlak(float val){
+    return val>=0 ? val:-val;
+}
+
+void blinkyPF(enemy* _enemy){
+    vect2d cPos = {420,0};
+    float range[4];
+        range[0] = range[1] = range[2] = range[3] = 650.f;
+    int dir[4];
+        dir[0] = 2; dir[1] = 3; dir[2] = 0; dir[3] = 1;
+    if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20-1]){
+        range[2] = mutlak(sqrt(float(
+                                  pow(cPos.x-_enemy->getBody()->x-20,2)+pow(cPos.y-_enemy->getBody()->y,2)
+                                  )));
+    }
+    if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20+1]){
+        range[3] = mutlak(sqrt(float(
+                                  pow(cPos.x-_enemy->getBody()->x+20,2)+pow(cPos.y-_enemy->getBody()->y,2)
+                                  )));
+    }
+    if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20-21]){
+        range[0] = mutlak(sqrt(float(
+                                  pow(cPos.x-_enemy->getBody()->x,2)+pow(cPos.y-_enemy->getBody()->y-20,2)
+                                  )));
+    }
+    if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20+21]){
+        range[1] = mutlak(sqrt(float(
+                                  pow(cPos.x-_enemy->getBody()->x,2)+pow(cPos.y-_enemy->getBody()->y+20,2)
+                                  )));
+    }
+    for(int i = 1; i < 4; i++){
+        for(int j = 0; j < i; j++){
+            if(range[j]>range[i]){
+                float temp = range[j];
+                range[j] = range[i];
+                range[i] = temp;
+                int tdir = dir[j];
+                dir[j] = dir[i];
+                dir[i] = tdir;
+            }
+        }
+    }
+    for(int i = 0; i < 4; i++){std::cout<<dir[i]<<" "<<range[i]<<std::endl;}
+    std::cout<<dir[0]<<std::endl;
 }
