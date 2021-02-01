@@ -415,6 +415,11 @@ void blinkyPF(enemy* _enemy, player mplayer, bool chasing){
         }else{
             range[2] = mutlak(sqrt(float(
                                   pow(cPos.x-(_enemy->getBody()->x-20),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+            if(range[2]>mutlak(sqrt(float(
+                                  pow(cPos.x-(_enemy->getBody()->x-440),2)+pow(cPos.y-_enemy->getBody()->y,2))))){
+                range[2] = mutlak(sqrt(float(
+                                  pow(cPos.x-(_enemy->getBody()->x-440),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+            }
         }
     }
     if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20+1]){
@@ -424,6 +429,11 @@ void blinkyPF(enemy* _enemy, player mplayer, bool chasing){
         }else{
             range[3] = mutlak(sqrt(float(
                                   pow(cPos.x-(_enemy->getBody()->x+20),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+            if(range[3]>mutlak(sqrt(float(
+                                  pow(cPos.x-(_enemy->getBody()->x+440),2)+pow(cPos.y-_enemy->getBody()->y,2))))){
+                range[3] = mutlak(sqrt(float(
+                                  pow(cPos.x-(_enemy->getBody()->x+440),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+            }
         }
     }
     if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20-21]){
