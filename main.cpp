@@ -189,7 +189,7 @@ public:
         frightened = false;
         this->id = id;
         if(id == 0){
-            body = {10*20,8*20,20,20};
+            body = {7*20,10*20,20,20};
         }
         if(id == 1){
             body = {9*20,10*20,20,20};
@@ -207,11 +207,11 @@ public:
 
     void moveX(int dir){
         body.x+=dir*20;
-        if(body.x>420){
+        if(body.x>400){
             body.x=0;
         }
         if(body.x<0){
-            body.x=420;
+            body.x=400;
         }
         eye = {body.x+7,body.y+3,6,6};
     }
@@ -409,14 +409,22 @@ void blinkyPF(enemy* _enemy, player mplayer, bool chasing){
     int dir[4];
         dir[0] = 2; dir[1] = 3; dir[2] = 0; dir[3] = 1;
     if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20-1]){
-        range[2] = mutlak(sqrt(float(
-                                  pow(cPos.x-(_enemy->getBody()->x-20),2)+pow(cPos.y-_enemy->getBody()->y,2)
-                                  )));
+        if(_enemy->getBody()->x==0){
+            range[2] = mutlak(sqrt(float(
+                       pow(cPos.x-(420),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+        }else{
+            range[2] = mutlak(sqrt(float(
+                                  pow(cPos.x-(_enemy->getBody()->x-20),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+        }
     }
     if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20+1]){
-        range[3] = mutlak(sqrt(float(
-                                  pow(cPos.x-(_enemy->getBody()->x+20),2)+pow(cPos.y-_enemy->getBody()->y,2)
-                                  )));
+        if(_enemy->getBody()->x>=420){
+            range[2] = mutlak(sqrt(float(
+                       pow(cPos.x-(0),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+        }else{
+            range[3] = mutlak(sqrt(float(
+                                  pow(cPos.x-(_enemy->getBody()->x+20),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+        }
     }
     if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20-21]){
         range[0] = mutlak(sqrt(float(
@@ -445,6 +453,12 @@ void blinkyPF(enemy* _enemy, player mplayer, bool chasing){
     if(!_enemy->moved){
         _enemy->lmd = dir[0];
         _enemy->moved = true;
+    }
+    if(_enemy->getBody()->x>=400 && _enemy->lmd != 0){
+        dir[0] = 1;
+    }
+    if(_enemy->getBody()->x<=0 && _enemy->lmd != 1){
+        dir[0] = 0;
     }
     if(dir[0] == 0){
         if(_enemy->lmd!=1){
