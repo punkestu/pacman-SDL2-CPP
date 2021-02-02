@@ -530,7 +530,7 @@ void blinkyPF(SDL_Renderer* renderer, enemy* _enemy, player mplayer, bool chasin
 }
 
 void pinkyPF(SDL_Renderer* renderer, enemy* _enemy, player mplayer, bool chasing){
-    vect2d cPos;
+    vect2d cPos = {0,0};
     if(_enemy->getBody()->x == 9*20 && _enemy->getBody()->y == 10*20){
         _enemy->moveX(1);
     }else if(_enemy->getBody()->x == 10*20 && _enemy->getBody()->y == 10*20){
@@ -655,15 +655,11 @@ void pinkyPF(SDL_Renderer* renderer, enemy* _enemy, player mplayer, bool chasing
             }
         }
     }
-
-    SDL_Rect rect = {cPos.x*20+5,cPos.y*20+5,10,10};
-    SDL_SetRenderDrawColor(renderer, 255,184,255,255);
-    SDL_RenderFillRect(renderer, &rect);
 }
 
 
 void inkyPF(SDL_Renderer* renderer, enemy* _enemy, enemy* blinky, player mplayer, bool chasing){
-    vect2d cPos;
+    vect2d cPos = {0,0};
     if(_enemy->getBody()->x == 10*20 && _enemy->getBody()->y == 10*20){
         _enemy->moveY(-2);
     }else{
@@ -786,9 +782,6 @@ void inkyPF(SDL_Renderer* renderer, enemy* _enemy, enemy* blinky, player mplayer
             }
         }
     }
-    SDL_Rect rect = {cPos.x*20+5,cPos.y*20+5,10,10};
-    SDL_SetRenderDrawColor(renderer, 0,255,255,255);
-    SDL_RenderFillRect(renderer, &rect);
 }
 
 void clydePF(SDL_Renderer* renderer, enemy* _enemy, player mplayer, bool chasing){
@@ -912,7 +905,4 @@ void clydePF(SDL_Renderer* renderer, enemy* _enemy, player mplayer, bool chasing
             }
         }
     }
-    SDL_Rect rect = {cPos.x*20+5,cPos.y*20+5,10,10};
-    SDL_SetRenderDrawColor(renderer, 255,184,81,255);
-    SDL_RenderFillRect(renderer, &rect);
 }
