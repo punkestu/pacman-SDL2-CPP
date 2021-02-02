@@ -249,10 +249,10 @@ public:
     SDL_Rect* getBody(){return &body;}
 
 };
-void blinkyPF(enemy* _enemy, player mplayer, bool chasing);
-void pinkyPF(enemy* _enemy, player mplayer, bool chasing);
-void inkyPF(enemy* _enemy);
-void clydePF(enemy* _enemy);
+void blinkyPF(SDL_Renderer* renderer, enemy* _enemy, player mplayer, bool chasing);
+void pinkyPF(SDL_Renderer* renderer, enemy* _enemy, player mplayer, bool chasing);
+void inkyPF(SDL_Renderer* renderer, enemy* _enemy, enemy* blinky, player mplayer, bool chasing);
+void clydePF(SDL_Renderer* renderer, enemy* _enemy, player mplayer, bool chasing);
 
 void mapRender(SDL_Renderer* renderer){
     SDL_Rect rect;
@@ -334,6 +334,7 @@ int main(int argc, char* argv[])
     int frame = SDL_GetTicks();
     int chaseTime = SDL_GetTicks();
     bool chasing = true;
+    bool dead = false;
     while(true){
         SDL_SetRenderDrawColor(renderer, 0,0,0,255);
         SDL_RenderClear(renderer);
@@ -348,6 +349,11 @@ int main(int argc, char* argv[])
         if(event.type == SDL_QUIT || (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)){
             break;
         }
+        if(dead){
+            if(event.type == SDL_KEYDOWN && (event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_RETURN2)){
+                break;
+            }
+        }
         mplayer.control(&event);
 
         if(chasing){
@@ -361,14 +367,18 @@ int main(int argc, char* argv[])
         }
 
         if(SDL_GetTicks()-frame>=175){
-            if(points.empty()){
-                if(event.type == SDL_KEYDOWN && (event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_RETURN2)){
-                    break;
+            if(!dead){
+                if(points.empty()){
+                    if(event.type == SDL_KEYDOWN && (event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_RETURN2)){
+                        break;
+                    }
+                }else{
+                    mplayer.update();
+                    blinkyPF(renderer, enemies[0],mplayer,chasing);
+                    pinkyPF(renderer, enemies[1],mplayer,chasing);
+                    inkyPF(renderer, enemies[2],enemies[0],mplayer,chasing);
+                    clydePF(renderer, enemies[3],mplayer,chasing);
                 }
-            }else{
-                mplayer.update();
-                blinkyPF(enemies[0],mplayer,chasing);
-                pinkyPF(enemies[1],mplayer,chasing);
             }
             //std::cout<<mplayer.getBody()->x<<":"<<mplayer.getBody()->y<<std::endl;
             frame = SDL_GetTicks();
@@ -379,6 +389,11 @@ int main(int argc, char* argv[])
                mplayer.getBody()->y < it->pos.y+10 && mplayer.getBody()->y+20 > it->pos.y){
                 points.erase(it);
                 it--;
+            }
+        }
+        for(unsigned int i = 0; i < enemies.size(); i++){
+            if(enemies[i]->getBody()->x == mplayer.getBody()->x && enemies[i]->getBody()->y == mplayer.getBody()->y){
+                dead = true;
             }
         }
 
@@ -399,7 +414,7 @@ float mutlak(float val){
     return val>=0 ? val:-val;
 }
 
-void blinkyPF(enemy* _enemy, player mplayer, bool chasing){
+void blinkyPF(SDL_Renderer* renderer, enemy* _enemy, player mplayer, bool chasing){
     vect2d cPos;
     if(chasing){
         cPos = {mplayer.getBody()->x,mplayer.getBody()->y};
@@ -508,126 +523,396 @@ void blinkyPF(enemy* _enemy, player mplayer, bool chasing){
             goto choose;
         }
     }
+
+    SDL_Rect rect = {cPos.x*20+5,cPos.y*20+5,10,10};
+    SDL_SetRenderDrawColor(renderer, 255,0,0,255);
+    SDL_RenderFillRect(renderer, &rect);
 }
 
-void pinkyPF(enemy* _enemy, player mplayer, bool chasing){
+void pinkyPF(SDL_Renderer* renderer, enemy* _enemy, player mplayer, bool chasing){
     vect2d cPos;
-    if(chasing){
-        if(mplayer.lcmd == 0){
-            cPos = {mplayer.getBody()->x-80,mplayer.getBody()->y};
-        }
-        if(mplayer.lcmd == 1){
-            cPos = {mplayer.getBody()->x+80,mplayer.getBody()->y};
-        }
-        if(mplayer.lcmd == 2){
-            cPos = {mplayer.getBody()->x,mplayer.getBody()->y-80};
-        }
-        if(mplayer.lcmd == 3){
-            cPos = {mplayer.getBody()->x,mplayer.getBody()->y+80};
-        }
+    if(_enemy->getBody()->x == 9*20 && _enemy->getBody()->y == 10*20){
+        _enemy->moveX(1);
+    }else if(_enemy->getBody()->x == 10*20 && _enemy->getBody()->y == 10*20){
+        _enemy->moveY(-2);
     }else{
-        cPos = {0,0};
-    }
-    float range[4];
-        range[0] = range[1] = range[2] = range[3] = 650.f;
-    int dir[4];
-        dir[0] = 2; dir[1] = 3; dir[2] = 0; dir[3] = 1;
-    if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20-1]){
-        if(_enemy->getBody()->x==0){
-            range[2] = mutlak(sqrt(float(
-                       pow(cPos.x-(420),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+        if(chasing){
+            if(mplayer.lcmd == 0){
+                cPos = {mplayer.getBody()->x-80,mplayer.getBody()->y};
+            }
+            if(mplayer.lcmd == 1){
+                cPos = {mplayer.getBody()->x+80,mplayer.getBody()->y};
+            }
+            if(mplayer.lcmd == 2){
+                cPos = {mplayer.getBody()->x,mplayer.getBody()->y-80};
+            }
+            if(mplayer.lcmd == 3){
+                cPos = {mplayer.getBody()->x,mplayer.getBody()->y+80};
+            }
         }else{
-            range[2] = mutlak(sqrt(float(
-                                  pow(cPos.x-(_enemy->getBody()->x-20),2)+pow(cPos.y-_enemy->getBody()->y,2))));
-            if(range[2]>mutlak(sqrt(float(
-                                  pow(cPos.x-(_enemy->getBody()->x-440),2)+pow(cPos.y-_enemy->getBody()->y,2))))){
+            cPos = {0,0};
+        }
+        float range[4];
+            range[0] = range[1] = range[2] = range[3] = 650.f;
+        int dir[4];
+            dir[0] = 2; dir[1] = 3; dir[2] = 0; dir[3] = 1;
+        if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20-1]){
+            if(_enemy->getBody()->x==0){
                 range[2] = mutlak(sqrt(float(
-                                  pow(cPos.x-(_enemy->getBody()->x-440),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+                           pow(cPos.x-(420),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+            }else{
+                range[2] = mutlak(sqrt(float(
+                                      pow(cPos.x-(_enemy->getBody()->x-20),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+                if(range[2]>mutlak(sqrt(float(
+                                      pow(cPos.x-(_enemy->getBody()->x-440),2)+pow(cPos.y-_enemy->getBody()->y,2))))){
+                    range[2] = mutlak(sqrt(float(
+                                      pow(cPos.x-(_enemy->getBody()->x-440),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+                }
             }
         }
-    }
-    if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20+1]){
-        if(_enemy->getBody()->x>=420){
-            range[2] = mutlak(sqrt(float(
-                       pow(cPos.x-(0),2)+pow(cPos.y-_enemy->getBody()->y,2))));
-        }else{
-            range[3] = mutlak(sqrt(float(
-                                  pow(cPos.x-(_enemy->getBody()->x+20),2)+pow(cPos.y-_enemy->getBody()->y,2))));
-            if(range[3]>mutlak(sqrt(float(
-                                  pow(cPos.x-(_enemy->getBody()->x+440),2)+pow(cPos.y-_enemy->getBody()->y,2))))){
+        if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20+1]){
+            if(_enemy->getBody()->x>=420){
+                range[2] = mutlak(sqrt(float(
+                           pow(cPos.x-(0),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+            }else{
                 range[3] = mutlak(sqrt(float(
-                                  pow(cPos.x-(_enemy->getBody()->x+440),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+                                      pow(cPos.x-(_enemy->getBody()->x+20),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+                if(range[3]>mutlak(sqrt(float(
+                                      pow(cPos.x-(_enemy->getBody()->x+440),2)+pow(cPos.y-_enemy->getBody()->y,2))))){
+                    range[3] = mutlak(sqrt(float(
+                                      pow(cPos.x-(_enemy->getBody()->x+440),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+                }
+            }
+        }
+        if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20-21]){
+            range[0] = mutlak(sqrt(float(
+                                      pow(cPos.x-_enemy->getBody()->x,2)+pow(cPos.y-(_enemy->getBody()->y-20),2)
+                                      )));
+        }
+        if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20+21]){
+            range[1] = mutlak(sqrt(float(
+                                      pow(cPos.x-_enemy->getBody()->x,2)+pow(cPos.y-(_enemy->getBody()->y+20),2)
+                                      )));
+        }
+        for(int i = 1; i < 4; i++){
+            for(int j = 0; j < i; j++){
+                if(range[j]>range[i]){
+                    float temp = range[j];
+                    range[j] = range[i];
+                    range[i] = temp;
+                    int tdir = dir[j];
+                    dir[j] = dir[i];
+                    dir[i] = tdir;
+                }
+            }
+        }
+        choose:
+        std::cout<<dir[0]<<":"<<range[0]<<std::endl;
+        if(!_enemy->moved){
+            _enemy->lmd = dir[0];
+            _enemy->moved = true;
+        }
+        if(_enemy->getBody()->x>=400 && _enemy->lmd != 0){
+            dir[0] = 1;
+        }
+        if(_enemy->getBody()->x<=0 && _enemy->lmd != 1){
+            dir[0] = 0;
+        }
+        if(dir[0] == 0){
+            if(_enemy->lmd!=1){
+                _enemy->moveX(-1);
+                _enemy->lmd = 0;
+            }else{
+                dir[0] = dir[1];
+                goto choose;
+            }
+        }
+        if(dir[0] == 1){
+            if(_enemy->lmd!=0){
+                _enemy->moveX(1);
+                _enemy->lmd = 1;
+            }else{
+                dir[0] = dir[1];
+                goto choose;
+            }
+        }
+        if(dir[0] == 2){
+            if(_enemy->lmd!=3){
+                _enemy->moveY(-1);
+                _enemy->lmd = 2;
+            }else{
+                dir[0] = dir[1];
+                goto choose;
+            }
+        }
+        if(dir[0] == 3){
+            if(_enemy->lmd!=2){
+                _enemy->moveY(1);
+                _enemy->lmd = 3;
+            }else{
+                dir[0] = dir[1];
+                goto choose;
             }
         }
     }
-    if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20-21]){
-        range[0] = mutlak(sqrt(float(
-                                  pow(cPos.x-_enemy->getBody()->x,2)+pow(cPos.y-(_enemy->getBody()->y-20),2)
-                                  )));
-    }
-    if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20+21]){
-        range[1] = mutlak(sqrt(float(
-                                  pow(cPos.x-_enemy->getBody()->x,2)+pow(cPos.y-(_enemy->getBody()->y+20),2)
-                                  )));
-    }
-    for(int i = 1; i < 4; i++){
-        for(int j = 0; j < i; j++){
-            if(range[j]>range[i]){
-                float temp = range[j];
-                range[j] = range[i];
-                range[i] = temp;
-                int tdir = dir[j];
-                dir[j] = dir[i];
-                dir[i] = tdir;
+
+    SDL_Rect rect = {cPos.x*20+5,cPos.y*20+5,10,10};
+    SDL_SetRenderDrawColor(renderer, 255,184,255,255);
+    SDL_RenderFillRect(renderer, &rect);
+}
+
+
+void inkyPF(SDL_Renderer* renderer, enemy* _enemy, enemy* blinky, player mplayer, bool chasing){
+    vect2d cPos;
+    if(_enemy->getBody()->x == 10*20 && _enemy->getBody()->y == 10*20){
+        _enemy->moveY(-2);
+    }else{
+        if(chasing){
+            if(mplayer.lcmd == 0){
+                cPos = {mplayer.getBody()->x-40-blinky->getBody()->x,mplayer.getBody()->y-blinky->getBody()->y};
+            }
+            if(mplayer.lcmd == 1){
+                cPos = {mplayer.getBody()->x+40-blinky->getBody()->x,mplayer.getBody()->y-blinky->getBody()->y};
+            }
+            if(mplayer.lcmd == 2){
+                cPos = {mplayer.getBody()->x-blinky->getBody()->x,mplayer.getBody()->y-40-blinky->getBody()->y};
+            }
+            if(mplayer.lcmd == 3){
+                cPos = {mplayer.getBody()->x-blinky->getBody()->x,mplayer.getBody()->y+40-blinky->getBody()->y};
+            }
+        }else{
+            cPos = {420,440};
+        }
+        float range[4];
+            range[0] = range[1] = range[2] = range[3] = 650.f;
+        int dir[4];
+            dir[0] = 2; dir[1] = 3; dir[2] = 0; dir[3] = 1;
+        if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20-1]){
+            if(_enemy->getBody()->x==0){
+                range[2] = mutlak(sqrt(float(
+                           pow(cPos.x-(420),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+            }else{
+                range[2] = mutlak(sqrt(float(
+                                      pow(cPos.x-(_enemy->getBody()->x-20),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+                if(range[2]>mutlak(sqrt(float(
+                                      pow(cPos.x-(_enemy->getBody()->x-440),2)+pow(cPos.y-_enemy->getBody()->y,2))))){
+                    range[2] = mutlak(sqrt(float(
+                                      pow(cPos.x-(_enemy->getBody()->x-440),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+                }
+            }
+        }
+        if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20+1]){
+            if(_enemy->getBody()->x>=420){
+                range[2] = mutlak(sqrt(float(
+                           pow(cPos.x-(0),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+            }else{
+                range[3] = mutlak(sqrt(float(
+                                      pow(cPos.x-(_enemy->getBody()->x+20),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+                if(range[3]>mutlak(sqrt(float(
+                                      pow(cPos.x-(_enemy->getBody()->x+440),2)+pow(cPos.y-_enemy->getBody()->y,2))))){
+                    range[3] = mutlak(sqrt(float(
+                                      pow(cPos.x-(_enemy->getBody()->x+440),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+                }
+            }
+        }
+        if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20-21]){
+            range[0] = mutlak(sqrt(float(
+                                      pow(cPos.x-_enemy->getBody()->x,2)+pow(cPos.y-(_enemy->getBody()->y-20),2)
+                                      )));
+        }
+        if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20+21]){
+            range[1] = mutlak(sqrt(float(
+                                      pow(cPos.x-_enemy->getBody()->x,2)+pow(cPos.y-(_enemy->getBody()->y+20),2)
+                                      )));
+        }
+        for(int i = 1; i < 4; i++){
+            for(int j = 0; j < i; j++){
+                if(range[j]>range[i]){
+                    float temp = range[j];
+                    range[j] = range[i];
+                    range[i] = temp;
+                    int tdir = dir[j];
+                    dir[j] = dir[i];
+                    dir[i] = tdir;
+                }
+            }
+        }
+        choose:
+        std::cout<<dir[0]<<":"<<range[0]<<std::endl;
+        if(!_enemy->moved){
+            _enemy->lmd = dir[0];
+            _enemy->moved = true;
+        }
+        if(_enemy->getBody()->x>=400 && _enemy->lmd != 0){
+            dir[0] = 1;
+        }
+        if(_enemy->getBody()->x<=0 && _enemy->lmd != 1){
+            dir[0] = 0;
+        }
+        if(dir[0] == 0){
+            if(_enemy->lmd!=1){
+                _enemy->moveX(-1);
+                _enemy->lmd = 0;
+            }else{
+                dir[0] = dir[1];
+                goto choose;
+            }
+        }
+        if(dir[0] == 1){
+            if(_enemy->lmd!=0){
+                _enemy->moveX(1);
+                _enemy->lmd = 1;
+            }else{
+                dir[0] = dir[1];
+                goto choose;
+            }
+        }
+        if(dir[0] == 2){
+            if(_enemy->lmd!=3){
+                _enemy->moveY(-1);
+                _enemy->lmd = 2;
+            }else{
+                dir[0] = dir[1];
+                goto choose;
+            }
+        }
+        if(dir[0] == 3){
+            if(_enemy->lmd!=2){
+                _enemy->moveY(1);
+                _enemy->lmd = 3;
+            }else{
+                dir[0] = dir[1];
+                goto choose;
             }
         }
     }
-    choose:
-    std::cout<<dir[0]<<":"<<range[0]<<std::endl;
-    if(!_enemy->moved){
-        _enemy->lmd = dir[0];
-        _enemy->moved = true;
-    }
-    if(_enemy->getBody()->x>=400 && _enemy->lmd != 0){
-        dir[0] = 1;
-    }
-    if(_enemy->getBody()->x<=0 && _enemy->lmd != 1){
-        dir[0] = 0;
-    }
-    if(dir[0] == 0){
-        if(_enemy->lmd!=1){
-            _enemy->moveX(-1);
-            _enemy->lmd = 0;
+    SDL_Rect rect = {cPos.x*20+5,cPos.y*20+5,10,10};
+    SDL_SetRenderDrawColor(renderer, 0,255,255,255);
+    SDL_RenderFillRect(renderer, &rect);
+}
+
+void clydePF(SDL_Renderer* renderer, enemy* _enemy, player mplayer, bool chasing){
+    vect2d cPos;
+    if(_enemy->getBody()->x == 11*20 && _enemy->getBody()->y == 10*20){
+        _enemy->moveX(-1);
+    }else if(_enemy->getBody()->x == 10*20 && _enemy->getBody()->y == 10*20){
+        _enemy->moveY(-2);
+    }else{
+        if(chasing){
+            if(_enemy->getBody()->x<=mplayer.getBody()->x-(40+mutlak(_enemy->getBody()->y-mplayer.getBody()->y)) ||
+               _enemy->getBody()->x>=mplayer.getBody()->x+(40+mutlak(_enemy->getBody()->y-mplayer.getBody()->y))){
+                cPos = {0,440};
+            }else{
+                cPos = {mplayer.getBody()->x,mplayer.getBody()->y};
+            }
+
         }else{
-            dir[0] = dir[1];
-            goto choose;
+            cPos = {0,440};
+        }
+        float range[4];
+            range[0] = range[1] = range[2] = range[3] = 650.f;
+        int dir[4];
+            dir[0] = 2; dir[1] = 3; dir[2] = 0; dir[3] = 1;
+        if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20-1]){
+            if(_enemy->getBody()->x==0){
+                range[2] = mutlak(sqrt(float(
+                           pow(cPos.x-(420),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+            }else{
+                range[2] = mutlak(sqrt(float(
+                                      pow(cPos.x-(_enemy->getBody()->x-20),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+                if(range[2]>mutlak(sqrt(float(
+                                      pow(cPos.x-(_enemy->getBody()->x-440),2)+pow(cPos.y-_enemy->getBody()->y,2))))){
+                    range[2] = mutlak(sqrt(float(
+                                      pow(cPos.x-(_enemy->getBody()->x-440),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+                }
+            }
+        }
+        if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20+1]){
+            if(_enemy->getBody()->x>=420){
+                range[2] = mutlak(sqrt(float(
+                           pow(cPos.x-(0),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+            }else{
+                range[3] = mutlak(sqrt(float(
+                                      pow(cPos.x-(_enemy->getBody()->x+20),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+                if(range[3]>mutlak(sqrt(float(
+                                      pow(cPos.x-(_enemy->getBody()->x+440),2)+pow(cPos.y-_enemy->getBody()->y,2))))){
+                    range[3] = mutlak(sqrt(float(
+                                      pow(cPos.x-(_enemy->getBody()->x+440),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+                }
+            }
+        }
+        if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20-21]){
+            range[0] = mutlak(sqrt(float(
+                                      pow(cPos.x-_enemy->getBody()->x,2)+pow(cPos.y-(_enemy->getBody()->y-20),2)
+                                      )));
+        }
+        if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20+21]){
+            range[1] = mutlak(sqrt(float(
+                                      pow(cPos.x-_enemy->getBody()->x,2)+pow(cPos.y-(_enemy->getBody()->y+20),2)
+                                      )));
+        }
+        for(int i = 1; i < 4; i++){
+            for(int j = 0; j < i; j++){
+                if(range[j]>range[i]){
+                    float temp = range[j];
+                    range[j] = range[i];
+                    range[i] = temp;
+                    int tdir = dir[j];
+                    dir[j] = dir[i];
+                    dir[i] = tdir;
+                }
+            }
+        }
+        choose:
+        std::cout<<dir[0]<<":"<<range[0]<<std::endl;
+        if(!_enemy->moved){
+            _enemy->lmd = dir[0];
+            _enemy->moved = true;
+        }
+        if(_enemy->getBody()->x>=400 && _enemy->lmd != 0){
+            dir[0] = 1;
+        }
+        if(_enemy->getBody()->x<=0 && _enemy->lmd != 1){
+            dir[0] = 0;
+        }
+        if(dir[0] == 0){
+            if(_enemy->lmd!=1){
+                _enemy->moveX(-1);
+                _enemy->lmd = 0;
+            }else{
+                dir[0] = dir[1];
+                goto choose;
+            }
+        }
+        if(dir[0] == 1){
+            if(_enemy->lmd!=0){
+                _enemy->moveX(1);
+                _enemy->lmd = 1;
+            }else{
+                dir[0] = dir[1];
+                goto choose;
+            }
+        }
+        if(dir[0] == 2){
+            if(_enemy->lmd!=3){
+                _enemy->moveY(-1);
+                _enemy->lmd = 2;
+            }else{
+                dir[0] = dir[1];
+                goto choose;
+            }
+        }
+        if(dir[0] == 3){
+            if(_enemy->lmd!=2){
+                _enemy->moveY(1);
+                _enemy->lmd = 3;
+            }else{
+                dir[0] = dir[1];
+                goto choose;
+            }
         }
     }
-    if(dir[0] == 1){
-        if(_enemy->lmd!=0){
-            _enemy->moveX(1);
-            _enemy->lmd = 1;
-        }else{
-            dir[0] = dir[1];
-            goto choose;
-        }
-    }
-    if(dir[0] == 2){
-        if(_enemy->lmd!=3){
-            _enemy->moveY(-1);
-            _enemy->lmd = 2;
-        }else{
-            dir[0] = dir[1];
-            goto choose;
-        }
-    }
-    if(dir[0] == 3){
-        if(_enemy->lmd!=2){
-            _enemy->moveY(1);
-            _enemy->lmd = 3;
-        }else{
-            dir[0] = dir[1];
-            goto choose;
-        }
-    }
+    SDL_Rect rect = {cPos.x*20+5,cPos.y*20+5,10,10};
+    SDL_SetRenderDrawColor(renderer, 255,184,81,255);
+    SDL_RenderFillRect(renderer, &rect);
 }
