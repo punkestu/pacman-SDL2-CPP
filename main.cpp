@@ -40,9 +40,10 @@ std::vector<bool> _maps = {
 class player{
 private:
     SDL_Rect body, mouth;
-    short cmd, lcmd;
+    short cmd;
     bool moveD[4];
 public:
+    short lcmd;
     player(std::vector<bool>* maps){
         body = {200,320,20,20};
         mouth = {body.x+7, body.y, 6, 10};
@@ -249,7 +250,7 @@ public:
 
 };
 void blinkyPF(enemy* _enemy, player mplayer, bool chasing);
-void pinkyPF(enemy* _enemy);
+void pinkyPF(enemy* _enemy, player mplayer, bool chasing);
 void inkyPF(enemy* _enemy);
 void clydePF(enemy* _enemy);
 
@@ -367,6 +368,7 @@ int main(int argc, char* argv[])
             }else{
                 mplayer.update();
                 blinkyPF(enemies[0],mplayer,chasing);
+                pinkyPF(enemies[1],mplayer,chasing);
             }
             //std::cout<<mplayer.getBody()->x<<":"<<mplayer.getBody()->y<<std::endl;
             frame = SDL_GetTicks();
@@ -403,6 +405,128 @@ void blinkyPF(enemy* _enemy, player mplayer, bool chasing){
         cPos = {mplayer.getBody()->x,mplayer.getBody()->y};
     }else{
         cPos = {480,0};
+    }
+    float range[4];
+        range[0] = range[1] = range[2] = range[3] = 650.f;
+    int dir[4];
+        dir[0] = 2; dir[1] = 3; dir[2] = 0; dir[3] = 1;
+    if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20-1]){
+        if(_enemy->getBody()->x==0){
+            range[2] = mutlak(sqrt(float(
+                       pow(cPos.x-(420),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+        }else{
+            range[2] = mutlak(sqrt(float(
+                                  pow(cPos.x-(_enemy->getBody()->x-20),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+            if(range[2]>mutlak(sqrt(float(
+                                  pow(cPos.x-(_enemy->getBody()->x-440),2)+pow(cPos.y-_enemy->getBody()->y,2))))){
+                range[2] = mutlak(sqrt(float(
+                                  pow(cPos.x-(_enemy->getBody()->x-440),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+            }
+        }
+    }
+    if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20+1]){
+        if(_enemy->getBody()->x>=420){
+            range[2] = mutlak(sqrt(float(
+                       pow(cPos.x-(0),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+        }else{
+            range[3] = mutlak(sqrt(float(
+                                  pow(cPos.x-(_enemy->getBody()->x+20),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+            if(range[3]>mutlak(sqrt(float(
+                                  pow(cPos.x-(_enemy->getBody()->x+440),2)+pow(cPos.y-_enemy->getBody()->y,2))))){
+                range[3] = mutlak(sqrt(float(
+                                  pow(cPos.x-(_enemy->getBody()->x+440),2)+pow(cPos.y-_enemy->getBody()->y,2))));
+            }
+        }
+    }
+    if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20-21]){
+        range[0] = mutlak(sqrt(float(
+                                  pow(cPos.x-_enemy->getBody()->x,2)+pow(cPos.y-(_enemy->getBody()->y-20),2)
+                                  )));
+    }
+    if(!_maps[_enemy->getBody()->y/20*21+_enemy->getBody()->x/20+21]){
+        range[1] = mutlak(sqrt(float(
+                                  pow(cPos.x-_enemy->getBody()->x,2)+pow(cPos.y-(_enemy->getBody()->y+20),2)
+                                  )));
+    }
+    for(int i = 1; i < 4; i++){
+        for(int j = 0; j < i; j++){
+            if(range[j]>range[i]){
+                float temp = range[j];
+                range[j] = range[i];
+                range[i] = temp;
+                int tdir = dir[j];
+                dir[j] = dir[i];
+                dir[i] = tdir;
+            }
+        }
+    }
+    choose:
+    std::cout<<dir[0]<<":"<<range[0]<<std::endl;
+    if(!_enemy->moved){
+        _enemy->lmd = dir[0];
+        _enemy->moved = true;
+    }
+    if(_enemy->getBody()->x>=400 && _enemy->lmd != 0){
+        dir[0] = 1;
+    }
+    if(_enemy->getBody()->x<=0 && _enemy->lmd != 1){
+        dir[0] = 0;
+    }
+    if(dir[0] == 0){
+        if(_enemy->lmd!=1){
+            _enemy->moveX(-1);
+            _enemy->lmd = 0;
+        }else{
+            dir[0] = dir[1];
+            goto choose;
+        }
+    }
+    if(dir[0] == 1){
+        if(_enemy->lmd!=0){
+            _enemy->moveX(1);
+            _enemy->lmd = 1;
+        }else{
+            dir[0] = dir[1];
+            goto choose;
+        }
+    }
+    if(dir[0] == 2){
+        if(_enemy->lmd!=3){
+            _enemy->moveY(-1);
+            _enemy->lmd = 2;
+        }else{
+            dir[0] = dir[1];
+            goto choose;
+        }
+    }
+    if(dir[0] == 3){
+        if(_enemy->lmd!=2){
+            _enemy->moveY(1);
+            _enemy->lmd = 3;
+        }else{
+            dir[0] = dir[1];
+            goto choose;
+        }
+    }
+}
+
+void pinkyPF(enemy* _enemy, player mplayer, bool chasing){
+    vect2d cPos;
+    if(chasing){
+        if(mplayer.lcmd == 0){
+            cPos = {mplayer.getBody()->x-80,mplayer.getBody()->y};
+        }
+        if(mplayer.lcmd == 1){
+            cPos = {mplayer.getBody()->x+80,mplayer.getBody()->y};
+        }
+        if(mplayer.lcmd == 2){
+            cPos = {mplayer.getBody()->x,mplayer.getBody()->y-80};
+        }
+        if(mplayer.lcmd == 3){
+            cPos = {mplayer.getBody()->x,mplayer.getBody()->y+80};
+        }
+    }else{
+        cPos = {0,0};
     }
     float range[4];
         range[0] = range[1] = range[2] = range[3] = 650.f;
